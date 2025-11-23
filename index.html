@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HostelHub — Issue Reporting</title>
+
+  <style>
+    :root{
+      --bg: lavender;
+      --card: rgb(192, 182, 207);
+      --muted: #6b7280;
+      --accent: #173167;
+      --danger: #ef4444;
+      --success: #10b981;
+      --glass: rgba(0,0,0,0.04);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:#111827;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 16px;
+      background:linear-gradient(90deg,#ffffff90,var(--glass));
+      border-bottom:1px solid #e6e9ee;
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+
+    .topbar h1{margin:0;font-size:1.1rem}
+    nav{display:flex;gap:8px;align-items:center}
+    .badge{padding:6px 8px;border-radius:8px;background:#eef2ff;color:var(--accent)}
+
+    .container{
+      max-width:1100px;
+      margin:16px auto;
+      padding:0 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    @media(min-width:900px){
+      .container{
+        grid-template-columns: 1fr 380px;
+      }
+      #admin-area{grid-column: span 2}
+    }
+
+    .card{
+      background:var(--card);
+      padding:14px;
+      border-radius:12px;
+      box-shadow: 0 6px 20px rgba(16,24,40,0.04);
+    }
+
+    .form label{display:block;margin-bottom:8px;font-size:0.9rem}
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select, textarea{
+      width:100%;
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #e6e9ee;
+      margin-top:6px;
+      font-size:0.95rem;
+      background:transparent;
+    }
+
+    .form-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .btn{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+    }
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid #e6e9ee}
+    .btn.small{padding:6px 8px;font-size:0.9rem}
+    .hidden{display:none}
+    .muted{color:var(--muted)}
+    .small{font-size:0.8rem}
+    .pill{padding:6px 8px;border-radius:999px;font-size:0.8rem}
+
+    .status.Open{background:#fff7ed;color:#b45309;border:1px solid #fde3c4}
+    .status.In-Progress{background:#eff6ff;color:#1e40af;border:1px solid #dbeafe}
+    .status.Resolved{background:#ecfdf5;color:#065f46;border:1px solid #d1fae5}
+
+    .complaint{border-top:1px solid #f3f4f6;padding-top:12px;margin-top:12px}
+    .complaint-head{display:flex;justify-content:space-between;align-items:center}
+    .meta{display:flex;gap:12px;margin:8px 0;color:var(--muted);font-size:0.84rem}
+    .desc{margin:8px 0}
+    .thumb{max-width:90%;border-radius:8px;margin:8px 0;border:1px solid #eceff6;object-fit:cover}
+    .complaint-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .comment-item{background:#fafafa;padding:8px;border-radius:8px;margin-top:8px;border:1px solid #f1f5f9}
+    .comments .muted{display:block;margin-top:6px;font-size:0.8rem}
+
+    .admin-controls{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+
+    /* FIX THE MODAL ALWAYS SHOWING BUG */
+    .modal{
+      position:fixed;inset:0;background:rgba(0,0,0,0.35);
+      display:flex;align-items:center;justify-content:center;padding:16px;
+    }
+
+    /* THIS FIXES YOUR LOGIN ISSUE */
+    .modal.hidden{
+      display:none !important;
+    }
+
+    .modal-content{width:100%;max-width:420px;position:relative}
+    .close{position:absolute;right:8px;top:6px;border:none;background:transparent;font-size:1.4rem;cursor:pointer}
+    #auth-tabs{display:flex;gap:8px;margin-bottom:8px}
+    .tab{flex:1;padding:8px;border-radius:8px;border:1px solid #e6e9ee;background:#fff;cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,#eef2ff,#fff);border-color:transparent}
+
+    .small-muted{font-size:0.8rem;color:var(--muted)}
+    .footer-note{font-size:0.9rem;color:var(--muted);margin-top:10px}
+  </style>
+
+  <link rel="stylesheet" href="spooo.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>HostelHub</h1>
+    <nav>
+      <button id="btn-show-login" class="btn small">Login / Register</button>
+      <button id="btn-logout" class="btn small hidden">Logout</button>
+      <span id="user-badge" class="badge hidden"></span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section id="student-area" class="card">
+      <h2>Raise a Complaint</h2>
+      <form id="complaint-form" class="form">
+        <label>
+          Title
+          <input type="text" id="complaint-title" required maxlength="80" />
+        </label>
+
+        <label>
+          Category
+          <select id="complaint-category">
+            <option>Electrical</option>
+            <option>Plumbing</option>
+            <option>Mess</option>
+            <option>Internet</option>
+            <option>Room</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>
+          Description
+          <textarea id="complaint-desc" rows="4" required></textarea>
+        </label>
+
+        <label>
+          Image (optional)
+          <input type="file" id="complaint-img" accept="image/*" />
+        </label>
+
+        <div class="form-row">
+          <button class="btn" id="btn-submit-complaint">Submit Complaint</button>
+          <button class="btn ghost" id="btn-clear-form" type="button">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="my-complaints" class="card">
+      <h2>My Complaints</h2>
+      <div id="complaints-list"></div>
+    </section>
+
+    <section id="admin-area" class="card hidden">
+      <h2>Admin Dashboard</h2>
+      <div class="admin-controls">
+        <label>
+          Filter:
+          <select id="filter-status">
+            <option value="all">All</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </label>
+        <label>
+          Sort by:
+          <select id="sort-by">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="priority">Priority</option>
+          </select>
+        </label>
+      </div>
+      <div id="admin-analytics" class="card" style="margin-bottom:16px;"></div>
+      <div id="admin-complaints-list"></div>
+    </section>
+  </main>
+
+  <!-- Login/Register modal -->
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="close" id="close-auth">&times;</button>
+      <div id="auth-tabs">
+        <button class="tab active" data-tab="login">Login</button>
+        <button class="tab" data-tab="register">Register</button>
+      </div>
+
+      <div id="login" class="auth-pane">
+        <h3>Login</h3>
+        <form id="login-form" class="form">
+          <label>
+            Email
+            <input type="email" id="login-email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="login-password" required />
+          </label>
+          <div class="form-row">
+            <button class="btn" type="submit">Login</button>
+          </div>
+          <p class="muted">Admin quick login: <strong>admin@hostelhub.com / admin123</strong></p>
+        </form>
+      </div>
+
+      <div id="register" class="auth-pane hidden">
+        <h3>Register (Student)</h3>
+        <form id="register-form" class="form">
+          <label>
+            Name
+            <input type="text" id="reg-name" required />
+          </label>
+          <label>
+            Email
+            <input type="email" id="reg-email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="reg-password" required minlength="4" />
+          </label>
+          <div class="form-row">
+            <button class="btn" type="submit">Register</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- template for complaint item (hidden) -->
+  <template id="complaint-template">
+    <article class="complaint">
+      <div class="complaint-head">
+        <h4 class="title"></h4>
+        <span class="status pill"></span>
+      </div>
+      <div class="meta">
+        <span class="category small muted"></span>
+        <span class="created small muted"></span>
+        <span class="priority small muted"></span>
+      </div>
+      <p class="desc"></p>
+      <img class="thumb hidden" alt="issue image" />
+      <div class="complaint-actions"></div>
+      <div class="comments"></div>
+    </article>
+  </template>
+
+  <!-- Main app script -->
+  <script>
+    const STORAGE_KEYS = {
+      USERS: 'hh_users',
+      COMPLAINTS: 'hh_complaints',
+      SESSION: 'hh_session'
+    };
+
+    // --- Helpers ---
+    const el = id => document.getElementById(id);
+    const formatTime = ts => new Date(ts).toLocaleString();
+
+    function load(key, fallback) {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }
+
+    function save(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    // create an initial admin user if not exists
+    function ensureAdmin() {
+      let users = load(STORAGE_KEYS.USERS, []);
+      if (!users.some(u => u.email === 'admin@hostelhub.com')) {
+        users.push({
+          id: 'u-admin',
+          name: 'Admin',
+          email: 'admin@hostelhub.com',
+          password: 'admin123',
+          role: 'admin'
+        });
+        save(STORAGE_KEYS.USERS, users);
+      }
+    }
+    ensureAdmin();
+
+    let users = load(STORAGE_KEYS.USERS, []);
+    let complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+    let session = load(STORAGE_KEYS.SESSION, null);
+
+    // --- UI references ---
+    const btnShowLogin = el('btn-show-login');
+    const authModal = el('auth-modal');
+    const closeAuth = el('close-auth');
+    const tabs = document.querySelectorAll('.tab');
+    const authPanes = document.querySelectorAll('.auth-pane');
+    const loginForm = el('login-form');
+    const registerForm = el('register-form');
+    const btnLogout = el('btn-logout');
+    const userBadge = el('user-badge');
+
+    const complaintForm = el('complaint-form');
+    const complaintsList = el('complaints-list');
+    const adminArea = el('admin-area');
+    const adminList = el('admin-complaints-list');
+    const filterStatus = el('filter-status');
+    const sortBy = el('sort-by');
+
+    // Template
+    const ct = document.getElementById('complaint-template');
+
+    // --- Session management ---
+    function setSession(user) {
+      session = user ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      } : null;
+
+      save(STORAGE_KEYS.SESSION, session);
+      renderAuthState();
+    }
+
+    function renderAuthState() {
+      if (session) {
+        btnShowLogin.classList.add('hidden');
+        btnLogout.classList.remove('hidden');
+        userBadge.classList.remove('hidden');
+        userBadge.textContent = `${session.name} (${session.role})`;
+
+        if (session.role === 'admin') {
+          adminArea.classList.remove('hidden');
+          document.getElementById('student-area').classList.add('hidden');
+        } else {
+          adminArea.classList.add('hidden');
+          document.getElementById('student-area').classList.remove('hidden');
+        }
+      } else {
+        btnShowLogin.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+        userBadge.classList.add('hidden');
+        adminArea.classList.add('hidden');
+        document.getElementById('student-area').classList.remove('hidden');
+      }
+      renderLists();
+    }
+
+    // --- Auth modal controls ---
+    btnShowLogin.addEventListener('click', () => {
+      authModal.classList.remove('hidden');
+    });
+
+    closeAuth.addEventListener('click', () => authModal.classList.add('hidden'));
+
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      authPanes.forEach(p => p.classList.add('hidden'));
+      document.getElementById(t.dataset.tab).classList.remove('hidden');
+    }));
+
+    /* NEW REGISTER HANDLER */
+    // registerForm.addEventListener('submit', e => {
+    //   e.preventDefault();
+    //   const name = el('reg-name').value.trim();
+    //   const email = el('reg-email').value.trim().toLowerCase();
+    //   const password = el('reg-password').value.trim();  
+
+    //   users = load(STORAGE_KEYS.USERS, []);
+    //   if (users.some(u => u.email === email)) {
+    //     alert('User already exists. Please login.');
+    //     return;
+    //   }
+    //   const id = 'u-' + Date.now();
+    //   const user = { id, name, email, password, role: 'student' };
+    //   users.push(user);
+    //   save(STORAGE_KEYS.USERS, users);
+    //   setSession(user);
+
+    //   authModal.classList.add('hidden');   // CLOSE POPUP
+    //   registerForm.reset();
+    // });
+
+    /* REGISTER USING BACKEND API */
+    registerForm.addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const name = el('reg-name').value.trim();
+    const email = el('reg-email').value.trim();
+    const password = el('reg-password').value.trim();
+
+    try {
+        const res = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+        console.log(data);
+
+        if (!res.ok || !data.success) {
+        alert(data.message || "Registration failed");
+        return;
+        }
+
+        // Backend returns the saved user
+        const user = data.user;  
+        setSession(user);         // login automatically
+
+        authModal.classList.add('hidden');
+        registerForm.reset();
+        alert("Registration Successful!");
+
+    } catch (err) {
+        alert("Server error. Please try again.");
+        console.error(err);
+    }
+    });
+
+
+    /* NEW LOGIN HANDLER */
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = el('login-email').value.trim().toLowerCase();
+      const password = el('login-password').value.trim();
+
+      users = load(STORAGE_KEYS.USERS, []);
+      const user = users.find(u => u.email === email && u.password === password);
+
+      console.log(user, users);
+      if (!user) {
+        alert('Invalid credentials');
+        return;
+      }
+
+      setSession(user);
+      authModal.classList.add('hidden');   // CLOSE POPUP
+      loginForm.reset();
+    });
+
+    btnLogout.addEventListener('click', () => {
+      setSession(null);
+    });
+
+    // --- Complaint form ---
+    document
+      .getElementById('btn-clear-form')
+      .addEventListener('click', () => complaintForm.reset());
+
+    complaintForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!session || session.role !== 'student') {
+        alert('Please login as a student to raise a complaint.');
+        return;
+      }
+
+      const title = el('complaint-title').value.trim();
+      const category = el('complaint-category').value;
+      const desc = el('complaint-desc').value.trim();
+      const imgInput = el('complaint-img');
+
+      let imgData = null;
+      if (imgInput.files && imgInput.files[0]) {
+        imgData = await readFileAsDataURL(imgInput.files[0]);
+      }
+
+      const complaint = {
+        id: 'c-' + Date.now(),
+        title,
+        category,
+        desc,
+        image: imgData,
+        status: 'Open',
+        createdAt: Date.now(),
+        createdBy: session.id,
+        createdByName: session.name,
+        comments: [],
+        priority: 'Normal'
+      };
+
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      complaints.unshift(complaint);
+      save(STORAGE_KEYS.COMPLAINTS, complaints);
+
+      complaintForm.reset();
+      renderLists();
+      alert('Complaint submitted!');
+    });
+
+    // read file to dataURL
+    function readFileAsDataURL(file) {
+      return new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // --- Render lists ---
+    function renderLists() {
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+
+      // student view ("My Complaints")
+      complaintsList.innerHTML = '';
+      if (!session) {
+        complaintsList.innerHTML =
+          '<p class="muted">Please login to raise and view your complaints.</p>';
+      } else {
+        const mine = complaints.filter(
+          c => c.createdBy === session.id || session.role === 'admin'
+        );
+        if (mine.length === 0) {
+          complaintsList.innerHTML = '<p class="muted">No complaints yet.</p>';
+        } else {
+          mine.forEach(c =>
+            complaintsList.appendChild(makeComplaintElement(c, false))
+          );
+        }
+      }
+
+      // admin list
+      adminList.innerHTML = '';
+      const filter = filterStatus.value || 'all';
+      let adminComplaints = complaints.slice();
+
+      if (filter !== 'all') {
+        adminComplaints = adminComplaints.filter(c => c.status === filter);
+      }
+
+      const sort = sortBy.value;
+      if (sort === 'newest') {
+        adminComplaints.sort((a,b) => b.createdAt - a.createdAt);
+      } else if (sort === 'oldest') {
+        adminComplaints.sort((a,b) => a.createdAt - b.createdAt);
+      } else if (sort === 'priority') {
+        adminComplaints.sort((a,b) => priorityRank(b.priority) - priorityRank(a.priority));
+      }
+
+      if (adminComplaints.length === 0) {
+        adminList.innerHTML = '<p class="muted">No complaints found.</p>';
+      } else {
+        adminComplaints.forEach(c =>
+          adminList.appendChild(makeComplaintElement(c, true))
+        );
+      }
+    }
+
+    function priorityRank(p) {
+      if (p === 'High') return 3;
+      if (p === 'Normal') return 2;
+      if (p === 'Low') return 1;
+      return 0;
+    }
+
+    filterStatus.addEventListener('change', renderLists);
+    sortBy.addEventListener('change', renderLists);
+
+    // create DOM for a complaint
+    function makeComplaintElement(c, isAdminView) {
+      const tpl = ct.content.cloneNode(true);
+      const article = tpl.querySelector('article');
+      tpl.querySelector('.title').textContent = c.title;
+
+      const statusSpan = tpl.querySelector('.status');
+      statusSpan.textContent = c.status;
+      statusSpan.classList.add('status');
+      statusSpan.classList.add(c.status.replace(/\s+/g, '-'));
+
+      tpl.querySelector('.category').textContent = c.category;
+      tpl.querySelector('.created').textContent =
+        `Raised by ${c.createdByName} · ${formatTime(c.createdAt)}`;
+      tpl.querySelector('.priority').textContent =
+        `Priority: ${c.priority}`;
+      tpl.querySelector('.desc').textContent = c.desc;
+
+      const imgEl = tpl.querySelector('.thumb');
+      if (c.image) {
+        imgEl.src = c.image;
+        imgEl.classList.remove('hidden');
+      } else {
+        imgEl.classList.add('hidden');
+      }
+
+      const actions = tpl.querySelector('.complaint-actions');
+
+      // If admin view, add controls to update status, priority, and comment
+      if (isAdminView && session && session.role === 'admin') {
+        const statusSel = document.createElement('select');
+        ['Open','In Progress','Resolved'].forEach(s => {
+          const o = document.createElement('option');
+          o.value = s;
+          o.textContent = s;
+          if (s === c.status) o.selected = true;
+          statusSel.appendChild(o);
+        });
+        statusSel.addEventListener('change', () => updateStatus(c.id, statusSel.value));
+        actions.appendChild(statusSel);
+
+        const prSel = document.createElement('select');
+        ['High','Normal','Low'].forEach(p => {
+          const o = document.createElement('option');
+          o.value = p;
+          o.textContent = p;
+          if (p === c.priority) o.selected = true;
+          prSel.appendChild(o);
+        });
+        prSel.addEventListener('change', () => updatePriority(c.id, prSel.value));
+        actions.appendChild(prSel);
+
+        const assignBtn = document.createElement('button');
+        assignBtn.className = 'btn small ghost';
+        assignBtn.textContent = 'Add Comment';
+        assignBtn.addEventListener('click', () => {
+          const text = prompt('Add comment / note for student:');
+          if (text) addComment(c.id, { by: 'Admin', text });
+        });
+        actions.appendChild(assignBtn);
+
+      } else if (session && session.role === 'student' && c.createdBy === session.id) {
+        // student can comment on their complaint and see status
+        const commentBtn = document.createElement('button');
+        commentBtn.className = 'btn small ghost';
+        commentBtn.textContent = 'Add Comment';
+        commentBtn.addEventListener('click', () => {
+          const text = prompt('Add comment for admin (eg: additional details):');
+          if (text) addComment(c.id, { by: session.name, text });
+        });
+        actions.appendChild(commentBtn);
+      }
+
+      // always add view details button (toggle comments)
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn small';
+      viewBtn.textContent = 'Toggle Details';
+      viewBtn.addEventListener('click', () => {
+        const cm = article.querySelector('.comments');
+        cm.classList.toggle('hidden');
+      });
+      actions.appendChild(viewBtn);
+
+      // render comments
+      const commentsDiv = tpl.querySelector('.comments');
+      commentsDiv.innerHTML = `<strong>Comments (${c.comments.length})</strong>`;
+      c.comments.forEach(cm => {
+        const d = document.createElement('div');
+        d.className = 'comment-item';
+        d.innerHTML =
+          `<strong>${cm.by}</strong> ` +
+          `<span class="small muted">· ${formatTime(cm.when)}</span>` +
+          `<div>${cm.text}</div>`;
+        commentsDiv.appendChild(d);
+      });
+
+      // admin quick action: auto-assign priority from title keywords (simple demo)
+      if (isAdminView) {
+        const autoBtn = document.createElement('button');
+        autoBtn.className = 'btn small ghost';
+        autoBtn.textContent = 'Auto-priority';
+        autoBtn.addEventListener('click', () => {
+          const p = guessPriority(c);
+          updatePriority(c.id, p);
+          alert('Auto-priority set to ' + p);
+        });
+        actions.appendChild(autoBtn);
+      }
+
+      // small indicator of who created it (only for admin to see)
+      if (isAdminView) {
+        const creator = document.createElement('div');
+        creator.className = 'small-muted';
+        creator.textContent = `Creator: ${c.createdByName} (${c.createdBy})`;
+        article.appendChild(creator);
+      }
+
+      return tpl;
+    }
+
+    // update operations
+    function updateStatus(id, status) {
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0) {
+        complaints[idx].status = status;
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderLists();
+        // Optionally add system comment
+        addComment(
+          id,
+          { by: 'System', text: `Status changed to ${status}` },
+          true
+        );
+      }
+    }
+
+    function updatePriority(id, p) {
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0) {
+        complaints[idx].priority = p;
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderLists();
+      }
+    }
+
+    function addComment(id, comment, system = false) {
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0) {
+        const cm = {
+          by: comment.by || (session ? session.name : 'Unknown'),
+          text: comment.text,
+          when: Date.now(),
+          system: !!system
+        };
+        complaints[idx].comments.push(cm);
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderLists();
+      }
+    }
+
+    // simple NLP-like priority guess
+    function guessPriority(c) {
+      const t = (c.title + ' ' + c.desc).toLowerCase();
+      if (t.match(/electric|fire|short|power|live wire|shock/)) return 'High';
+      if (t.match(/leak|water|pipe|tap|drain/)) return 'High';
+      if (t.match(/slow internet|wifi|router|connect/)) return 'Normal';
+      return 'Normal';
+    }
+
+    // on load render
+    document.addEventListener('DOMContentLoaded', () => {
+      users = load(STORAGE_KEYS.USERS, []);
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      session = load(STORAGE_KEYS.SESSION, null);
+      renderAuthState();
+    });
+
+    // expose for debugging in console
+    window._hh = {
+      loadUsers: () => load(STORAGE_KEYS.USERS, []),
+      loadComplaints: () => load(STORAGE_KEYS.COMPLAINTS, []),
+      clearAll: () => { localStorage.clear(); location.reload(); }
+    };
+
+    // --- Admin Analytics Stats ---
+    async function renderAdminAnalytics() {
+      const analyticsDiv = document.getElementById('admin-analytics');
+      if (!session || session.role !== 'admin') {
+        analyticsDiv.innerHTML = '';
+        return;
+      }
+      analyticsDiv.innerHTML = '<div>Loading analytics...</div>';
+      try {
+        // You may need to update the token logic to get JWT from your backend login
+        const token = session.token || localStorage.getItem('jwt_token');
+        const res = await fetch('http://localhost:5000/api/analytics/advanced', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok && data) {
+          analyticsDiv.innerHTML = `
+            <h3 style="font-size:1.2rem;margin-bottom:8px;">Advanced Analytics</h3>
+            <div><strong>Most Common Issues:</strong></div>
+            <ul style="margin-left:18px;">
+              ${data.mostCommonIssues.map(issue => `<li>${issue._id} <span style='color:#6b7280'>(${issue.count})</span></li>`).join('')}
+            </ul>
+            <div style="margin-top:10px;"><strong>Average Resolution Time:</strong> <span>${(data.averageResolutionTimeHours || 0).toFixed(2)} hours</span></div>
+          `;
+        } else {
+          analyticsDiv.innerHTML = '<div>Could not load analytics.</div>';
+        }
+      } catch (err) {
+        analyticsDiv.innerHTML = '<div>Analytics fetch error.</div>';
+      }
+    }
+
+    // Call analytics render when admin logs in
+    function renderAuthState() {
+      if (session) {
+        btnShowLogin.classList.add('hidden');
+        btnLogout.classList.remove('hidden');
+        userBadge.classList.remove('hidden');
+        userBadge.textContent = `${session.name} (${session.role})`;
+
+        if (session.role === 'admin') {
+          adminArea.classList.remove('hidden');
+          document.getElementById('student-area').classList.add('hidden');
+          renderAdminAnalytics();
+        } else {
+          adminArea.classList.add('hidden');
+          document.getElementById('student-area').classList.remove('hidden');
+        }
+      } else {
+        btnShowLogin.classList.remove('hidden');
+        btnLogout.classList.add('hidden');
+        userBadge.classList.add('hidden');
+        adminArea.classList.add('hidden');
+        document.getElementById('student-area').classList.remove('hidden');
+      }
+      renderLists();
+    }
+ </script>
+</body>
+</html>

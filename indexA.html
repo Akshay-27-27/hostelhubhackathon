@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HostelHub — Admin Dashboard</title>
+
+  <style>
+    :root{
+      --bg: #1a1a1a; /* Changed to dark background */
+      --card: #2d2d2d; /* Changed to dark card background */
+      --muted: #a0a0a0; /* Adjusted muted color for dark theme */
+      --accent: #3b82f6; /* Slightly adjusted accent */
+      --danger: #ef4444;
+      --success: #10b981;
+      --glass: rgba(255,255,255,0.04); /* Adjusted glass for dark theme */
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:#ffffff; /* Changed font color to white for dark theme */
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px 16px;
+      background:linear-gradient(90deg,#2d2d2d90,var(--glass)); /* Adjusted for dark theme */
+      border-bottom:1px solid #404040; /* Adjusted border */
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+
+    .topbar h1{margin:0;font-size:1.1rem}
+    .topbar small{color:var(--muted);}
+
+    .container{
+      max-width:1100px;
+      margin:16px auto;
+      padding:0 12px;
+    }
+
+    .card{
+      background:var(--card);
+      padding:14px;
+      border-radius:12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2); /* Adjusted shadow for dark theme */
+    }
+
+    .admin-controls{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+
+    label span{
+      font-size:0.85rem;
+      color:var(--muted);
+      margin-right:4px;
+    }
+
+    select{
+      padding:6px 8px;
+      border-radius:8px;
+      border:1px solid #404040; /* Adjusted border */
+      font-size:0.9rem;
+      background:#2d2d2d; /* Adjusted background */
+      color:#ffffff; /* Added font color */
+    }
+
+    .btn{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:6px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:0.85rem;
+    }
+    .btn.ghost{
+      background:transparent;
+      color:var(--accent);
+      border:1px solid #404040; /* Adjusted border */
+    }
+    .btn.small{font-size:0.8rem;padding:5px 8px;}
+
+    .small{font-size:0.8rem}
+    .muted{color:var(--muted)}
+    .small-muted{font-size:0.8rem;color:var(--muted);margin-top:4px;}
+    .pill{padding:4px 8px;border-radius:999px;font-size:0.75rem;}
+
+    .status.Open{background:#4a2c17;color:#f59e0b;border:1px solid #92400e} /* Adjusted for dark theme */
+    .status.In-Progress{background:#1e3a5f;color:#3b82f6;border:1px solid #1e40af} /* Adjusted */
+    .status.Resolved{background:#064e3b;color:#10b981;border:1px solid #065f46} /* Adjusted */
+
+    .complaint{border-top:1px solid #404040;padding-top:12px;margin-top:12px} /* Adjusted border */
+    .complaint:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+
+    .complaint-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .complaint-head h4{margin:0;font-size:1rem;}
+
+    .meta{
+      display:flex;
+      gap:12px;
+      margin:6px 0;
+      color:var(--muted);
+      font-size:0.8rem;
+      flex-wrap:wrap;
+    }
+
+    .desc{margin:6px 0;font-size:0.9rem;}
+
+    /* .thumb{
+      max-width:90%;
+      border-radius:8px;
+      margin:6px 0;
+      border:1px solid #404040; /* Adjusted border 
+      object-fit: contain;
+    } */
+    .thumb {
+        /* The image itself should use 100% of the space defined by the container */
+        max-width: 100%; 
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        
+        /* This ensures the entire image is visible, fitting within the dimensions of the container 
+        without cropping, while maintaining its aspect ratio. */
+        object-fit: contain; 
+        
+        /* Original aesthetic styles */
+        border-radius: 8px;
+        border: 1px solid #404040;
+    }
+
+    .complaint-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+      align-items:center;
+    }
+
+    .comment-item{
+      background:#3d3d3d; /* Adjusted background */
+      padding:6px;
+      border-radius:8px;
+      margin-top:6px;
+      border:1px solid #404040; /* Adjusted border */
+      font-size:0.85rem;
+    }
+
+    .comments{margin-top:6px;}
+    .comments-header{font-weight:600;font-size:0.9rem;}
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#1e3a5f; /* Adjusted background */
+      color:#3b82f6; /* Adjusted color */
+      font-size:0.75rem;
+    }
+
+    /* Hides elements like the image when no src is set */
+    .hidden{
+      display:none;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>HostelHub Admin</h1>
+      <small>Manage all hostel complaints</small>
+    </div>
+    <div class="tag">
+      Admin
+      <span class="dot"></span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2 style="margin-top:0">Complaints Dashboard</h2>
+      <p class="muted small">This page reads complaints from <code>localStorage</code> (same data as your main app).</p>
+
+      <div class="admin-controls">
+        <label>
+          <span>Filter:</span>
+          <select id="filter-status">
+            <option value="all">All</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </label>
+        <label>
+          <span>Sort by:</span>
+          <select id="sort-by">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="priority">Priority</option>
+          </select>
+        </label>
+        <button id="refresh" class="btn small ghost">Refresh from storage</button>
+      </div>
+
+      <div id="admin-complaints-list"></div>
+    </section>
+  </main>
+
+  <template id="complaint-template">
+    <article class="complaint">
+      <div class="complaint-head">
+        <h4 class="title"></h4>
+        <span class="status pill"></span>
+      </div>
+      <div class="meta">
+        <span class="category small muted"></span>
+        <span class="created small muted"></span>
+        <span class="priority small muted"></span>
+      </div>
+      <p class="desc"></p>
+      <img class="thumb hidden" alt="issue image" />
+      <div class="complaint-actions"></div>
+      <div class="comments"></div>
+      <div class="small-muted creator"></div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEYS = {
+      USERS: 'hh_users',
+      COMPLAINTS: 'hh_complaints',
+      SESSION: 'hh_session'
+    };
+
+    const el  = id => document.getElementById(id);
+    const formatTime = ts => new Date(ts).toLocaleString();
+
+    function load(key, fallback){
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }
+    function save(key, val){
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    const adminList   = el('admin-complaints-list');
+    const filterStatus = el('filter-status');
+    const sortBy       = el('sort-by');
+    const refreshBtn   = el('refresh');
+    const ct           = el('complaint-template');
+
+    let complaints = [];
+
+    function priorityRank(p){
+      if (p === 'High') return 3;
+      if (p === 'Normal') return 2;
+      if (p === 'Low') return 1;
+      return 0;
+    }
+
+    function guessPriority(c) {
+      const t = (c.title + ' ' + c.desc).toLowerCase();
+      if (t.match(/electric|fire|short|power|live wire|shock/)) return 'High';
+      if (t.match(/leak|water|pipe|tap|drain/)) return 'High';
+      if (t.match(/slow internet|wifi|router|connect/)) return 'Normal';
+      return 'Normal';
+    }
+
+    function updateStatus(id, status){
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0){
+        complaints[idx].status = status;
+        // add system comment
+        complaints[idx].comments.push({
+          by: 'System',
+          text: `Status changed to ${status}`,
+          when: Date.now(),
+          system: true
+        });
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderComplaints();
+      }
+    }
+
+    function updatePriority(id, p){
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0){
+        complaints[idx].priority = p;
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderComplaints();
+      }
+    }
+
+    function addComment(id, commentBy){
+      const text = prompt('Add comment / note:');
+      if (!text) return;
+
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      const idx = complaints.findIndex(c => c.id === id);
+      if (idx >= 0){
+        complaints[idx].comments.push({
+          by: commentBy || 'Admin',
+          text,
+          when: Date.now(),
+          system: false
+        });
+        save(STORAGE_KEYS.COMPLAINTS, complaints);
+        renderComplaints();
+      }
+    }
+
+    function makeComplaintElement(c){
+      const tpl = ct.content.cloneNode(true);
+      const article = tpl.querySelector('article');
+
+      tpl.querySelector('.title').textContent = c.title;
+
+      const statusSpan = tpl.querySelector('.status');
+      statusSpan.textContent = c.status;
+      statusSpan.classList.add('status');
+      statusSpan.classList.add(c.status.replace(/\s+/g,'-'));
+
+      tpl.querySelector('.category').textContent = c.category;
+      tpl.querySelector('.created').textContent  =
+        `Raised by ${c.createdByName} · ${formatTime(c.createdAt)}`;
+      tpl.querySelector('.priority').textContent =
+        `Priority: ${c.priority}`;
+      tpl.querySelector('.desc').textContent     = c.desc;
+
+      const imgEl = tpl.querySelector('.thumb');
+      if (c.image){
+        imgEl.src = c.image;
+        imgEl.classList.remove('hidden');
+      } else {
+        imgEl.classList.add('hidden'); // stays fully hidden, so no "issue image" text
+      }
+
+      tpl.querySelector('.creator').textContent =
+        `Creator ID: ${c.createdBy}`;
+
+      const actions = tpl.querySelector('.complaint-actions');
+
+      // status select
+      const statusSel = document.createElement('select');
+      ['Open','In Progress','Resolved'].forEach(s=>{
+        const o = document.createElement('option');
+        o.value = s;
+        o.textContent = s;
+        if (s === c.status) o.selected = true;
+        statusSel.appendChild(o);
+      });
+      statusSel.addEventListener('change', () => updateStatus(c.id, statusSel.value));
+      actions.appendChild(statusSel);
+
+      // priority select
+      const prSel = document.createElement('select');
+      ['High','Normal','Low'].forEach(p=>{
+        const o = document.createElement('option');
+        o.value = p;
+        o.textContent = p;
+        if (p === c.priority) o.selected = true;
+        prSel.appendChild(o);
+      });
+      prSel.addEventListener('change', () => updatePriority(c.id, prSel.value));
+      actions.appendChild(prSel);
+
+      // add comment
+      const commentBtn = document.createElement('button');
+      commentBtn.className = 'btn small ghost';
+      commentBtn.textContent = 'Add Comment';
+      commentBtn.addEventListener('click', () => addComment(c.id, 'Admin'));
+      actions.appendChild(commentBtn);
+
+      // auto-priority
+      const autoBtn = document.createElement('button');
+      autoBtn.className = 'btn small ghost';
+      autoBtn.textContent = 'Auto-priority';
+      autoBtn.addEventListener('click', () => {
+        const p = guessPriority(c);
+        updatePriority(c.id, p);
+        alert('Auto-priority set to ' + p);
+      });
+      actions.appendChild(autoBtn);
+
+      // comments
+      const commentsDiv = tpl.querySelector('.comments');
+      const header = document.createElement('div');
+      header.className = 'comments-header';
+      header.textContent = `Comments (${c.comments.length})`;
+      commentsDiv.appendChild(header);
+
+      if (c.comments.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'small muted';
+        empty.textContent = 'No comments yet.';
+        commentsDiv.appendChild(empty);
+      } else {
+        c.comments.forEach(cm=>{
+          const d = document.createElement('div');
+          d.className = 'comment-item';
+          d.innerHTML =
+            `<strong>${cm.by}</strong> ` +
+            `<span class="small muted">· ${formatTime(cm.when)}</span>` +
+            `<div>${cm.text}</div>`;
+          commentsDiv.appendChild(d);
+        });
+      }
+
+      return tpl;
+    }
+
+    function renderComplaints(){
+      complaints = load(STORAGE_KEYS.COMPLAINTS, []);
+      adminList.innerHTML = '';
+
+      if (!complaints || complaints.length === 0){
+        adminList.innerHTML = '<p class="muted small">No complaints stored yet.</p>';
+        return;
+      }
+
+      const filter = filterStatus.value || 'all';
+      let list = complaints.slice();
+
+      if (filter !== 'all'){
+        list = list.filter(c => c.status === filter);
+      }
+
+      const sort = sortBy.value;
+      if (sort === 'newest'){
+        list.sort((a,b)=> b.createdAt - a.createdAt);
+      } else if (sort === 'oldest'){
+        list.sort((a,b)=> a.createdAt - b.createdAt);
+      } else if (sort === 'priority'){
+        list.sort((a,b)=> priorityRank(b.priority) - priorityRank(a.priority));
+      }
+
+      list.forEach(c => adminList.appendChild(makeComplaintElement(c)));
+    }
+
+    filterStatus.addEventListener('change', renderComplaints);
+    sortBy.addEventListener('change', renderComplaints);
+    refreshBtn.addEventListener('click', renderComplaints);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderComplaints();
+    });
+  </script>
+</body>
+</html>
